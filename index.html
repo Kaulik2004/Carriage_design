@@ -143,6 +143,13 @@
     letter-spacing: 0.06em;
     font-size: 1rem;
   }
+   /* the deflection verdict claas */
+  .est-verdict.pass, .est-defl-verdict.pass {
+    background: rgba(39, 174, 96, 0.15);
+    border: 1px solid rgba(46, 204, 113, 0.4);
+    color: #2ecc71;
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.05);
+  }
   .est-verdict.pass {
     background: rgba(39, 174, 96, 0.15);
     border: 1px solid rgba(46, 204, 113, 0.4);
@@ -169,6 +176,24 @@
     letter-spacing: 0.04em;
     opacity: 0.85;
   }
+  /* Custom styling specifically for the Deflection Verdict Banner */
+#est-defl-verdict {
+  /* font-family: 'Share Tech Mono', monospace; Change font to code/mono style */
+  padding: 20px 24px;                        /* Increase interior spacing */
+  gap: 20px;                                 /* Space between 'Passed' icon and text */
+}
+
+/* Custom styling for the Deflection Title text */
+#est-defl-verdict-title {
+  font-size: 1.2rem;                         /* Change title font size */
+  margin-bottom: 6px;                        /* Add spacing below title */
+}
+
+/* Custom styling for the Deflection Formula Subtext */
+#est-defl-verdict-sub {
+  font-size: 0.85rem;                        /* Change subtext font size */
+  letter-spacing: 0.02em;                    /* Tweak spacing between letters */
+}     
 
   /* Formula note in estimates */
   .est-formula-note {
@@ -186,6 +211,14 @@
     color: rgba(0, 200, 180, 0.85);
     font-size: 0.72rem;
   }
+
+ 
+  /* .est-verdict.fail, .est-defl-verdict.fail {
+    background: rgba(192, 41, 43, 0.15);
+    border: 1px solid rgba(231, 76, 60, 0.4);
+    color: #e74c3c;
+    box-shadow: 0 0 10px rgba(231, 76, 60, 0.05);
+  } */
 
   #btn-est-calc {
     display: inline-flex;
@@ -228,7 +261,7 @@
 
   <header>
     <div class="header-inner">
-      <div class="header-badge">IS 2062 · E250 BR · v2</div>
+      <!-- <div class="header-badge">IS 2062 · E250 BR · v2</div> -->
       <h1>Carriage Beam <span>Design Calculator</span></h1>
       <p class="header-sub">Hollow Rectangular Box Section · Ladle Carriage Car </p>
     </div>
@@ -343,15 +376,21 @@
             <input type="number" id="est-sy" value="250" min="100" step="5" />
             <span class="unit">MPa</span>
           </div>
-          <small>Override σ<sub>y</sub> for this section only (IS 2062 E250 BR = 250 MPa)</small>
+          <small>Override σ<sub>y</sub> </small>
         </div>
 
       </div>
-
+     <!-- BUTTONS -->
       <button id="btn-est-calc" onclick="runEstimateCheck()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         Check Estimates
       </button>
+
+<button id="btn-est-print" onclick="printEstimatesReport()" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #1b3a4b 0%, #275d7a 100%); border: 1px solid #3a8fb7; color: #ffffff; padding: 10px 20px; border-radius: 4px; font-family: 'Barlow Condensed', sans-serif; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; transition: all 0.2s ease; margin-top: 8px; margin-left: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+        Print Estimates Report
+      </button>
+
 
       <div class="est-results-strip" id="est-results-strip" style="display:none;">
         <div class="est-kpi">
@@ -379,12 +418,20 @@
           <div class="est-kpi-lbl">δ at x (mm)</div>
         </div>
       </div>
-
+<!-- shows the stress check -->
       <div class="est-verdict" id="est-verdict">
         <div class="est-verdict-icon" id="est-verdict-icon">✓</div>
         <div class="est-verdict-body">
           <strong id="est-verdict-title">—</strong>
           <span id="est-verdict-sub">—</span>
+        </div>
+      </div>
+ <!-- shows the defelction check -->
+      <div class="est-verdict" id="est-defl-verdict" style="margin-top: 12px;">
+        <div class="est-verdict-icon" id="est-defl-verdict-icon">✓</div>
+        <div class="est-verdict-body">
+          <strong id="est-defl-verdict-title">—</strong>
+          <span id="est-defl-verdict-sub">—</span>
         </div>
       </div>
 
@@ -499,6 +546,273 @@
         ? 'STRESS CHECK PASSED — Section is adequate'
         : 'STRESS CHECK FAILED — Section is overstressed';
       vSub.textContent      = `σ_b = ${sig_b.toFixed(3)} MPa  ${pass ? '≤' : '>'}  σ_allow = ${sig_allow.toFixed(2)} MPa   (x = ${x_pos} mm)`;
+
+      // --- DEFLECTION CHECK ---
+      const dVerdict = document.getElementById('est-defl-verdict');
+      const dIcon    = document.getElementById('est-defl-verdict-icon');
+      const dTitle   = document.getElementById('est-defl-verdict-title');
+      const dSub     = document.getElementById('est-defl-verdict-sub');
+
+      // Assuming L is in mm and defl is calculated in mm. 
+      // If defl is absolute/directional, Math.abs(defl) ensures a proper comparison.
+      const defl_allow = L / 700;
+      const deflPass   = Math.abs(defl) <= defl_allow;
+
+      dVerdict.style.display = 'flex';
+      dVerdict.className     = 'est-defl-verdict ' + (deflPass ? 'pass' : 'fail');
+      dIcon.textContent     = deflPass ? ' Passed' : ' Failed';
+      dTitle.textContent    = deflPass
+        ? 'DEFLECTION CHECK PASSED — Stiffness is adequate'
+        : 'DEFLECTION CHECK FAILED — Excessive deflection';
+      dSub.textContent      = `δ = ${Math.abs(defl).toFixed(3)} mm  ${deflPass ? '≤' : '>'}  δ_allow = ${defl_allow.toFixed(3)} mm (L/700)`;        
+    }
+    
+// PRINTINGGGGGGGGGGG
+
+    function printEstimatesReport() {
+      // 1. Force state recalculation to guarantee up-to-date visualization values
+      runEstimateCheck();
+
+      // 2. Setup dynamic printing container workspace  
+      const printContainer = document.createElement('div');
+      printContainer.id = 'print-diagrams-wrap';
+      printContainer.style.display = 'none';
+
+      // // 3. Duplicate live canvas diagrams  based on the next section
+      // const origSFD = document.getElementById('sfd-canvas');
+      // const origBMD = document.getElementById('bmd-canvas');
+      // if (origSFD && origBMD) {
+      //   const sfdLabel = document.createElement('div');
+      //   sfdLabel.className = 'print-diag-title';
+      //   sfdLabel.innerText = "SHEAR FORCE DIAGRAM (SFD)";
+        
+      //   const copySFD = document.createElement('canvas');
+      //   copySFD.width = origSFD.width;
+      //   copySFD.height = origSFD.height;
+      //   copySFD.getContext('2d').drawImage(origSFD, 0, 0);
+
+      //   const bmdLabel = document.createElement('div');
+      //   bmdLabel.className = 'print-diag-title';
+      //   bmdLabel.innerText = "BENDING MOMENT DIAGRAM (BMD)";
+
+      //   const copyBMD = document.createElement('canvas');
+      //   copyBMD.width = origBMD.width;
+      //   copyBMD.height = origBMD.height;
+      //   copyBMD.getContext('2d').drawImage(origBMD, 0, 0);
+
+      // 3. Generate SFD & BMD diagrams based on the "Check Our Estimates" section values
+      //    (load position x = est-x, load P in tonnes = est-P, span L = est-L)
+      const estL = parseFloat(document.getElementById('est-L').value);
+      const estX = parseFloat(document.getElementById('est-x').value);
+      const estP = parseFloat(document.getElementById('est-P').value) || 1;
+
+      if (!isNaN(estL) && !isNaN(estX) && estL > 0 && estX > 0 && estX < estL) {
+        const P_est    = estP * 9810; // N (kept normalised, same convention as drawDiagrams)
+        const Ra_est   = P_est * (estL - estX) / estL;
+        const Rb_est   = P_est * estX / estL;
+        const Mmax_est = P_est * estX * (estL - estX) / estL;
+
+        const sfdLabel = document.createElement('div');
+        sfdLabel.className = 'print-diag-title';
+        sfdLabel.innerText = "SHEAR FORCE DIAGRAM (SFD)";
+
+        const copySFD = document.createElement('canvas');
+        copySFD.width = 520;
+        copySFD.height = 240;
+        _drawSFD(copySFD, estL, estX, Ra_est, Rb_est, P_est);
+
+        const bmdLabel = document.createElement('div');
+        bmdLabel.className = 'print-diag-title';
+        bmdLabel.innerText = "BENDING MOMENT DIAGRAM (BMD)";
+
+        const copyBMD = document.createElement('canvas');
+        copyBMD.width = 520;
+        copyBMD.height = 240;
+        _drawBMD(copyBMD, estL, estX, Mmax_est, Ra_est);
+
+        printContainer.appendChild(sfdLabel);
+        printContainer.appendChild(copySFD);
+        printContainer.appendChild(bmdLabel);
+        printContainer.appendChild(copyBMD);
+      }
+
+  
+// 4. Generate Cross-Section & Elevation diagrams based on the "Check Our Estimates" section values
+      //    (B = est-B, H = est-H, t1 = est-t1, t2 = est-t2, t3 = est-t3, L = est-L)
+      const estB  = parseFloat(document.getElementById('est-B').value);
+      const estH  = parseFloat(document.getElementById('est-H').value);
+      const estT1 = parseFloat(document.getElementById('est-t1').value);
+      const estT2 = parseFloat(document.getElementById('est-t2').value);
+      const estT3 = parseFloat(document.getElementById('est-t3').value);
+
+      if (!isNaN(estB) && !isNaN(estH) && !isNaN(estT1) && !isNaN(estT2) && !isNaN(estT3) && estB > 0 && estH > 0) {
+        const secLabel = document.createElement('div');
+        secLabel.className = 'print-diag-title';
+        secLabel.innerText = "SECTION VISUALIZATION CROSS-SECTION";
+
+        const copySec = document.createElement('canvas');
+        copySec.width = 420;
+        copySec.height = 300;
+        _drawCrossSection(copySec, estB, estH, estT1, estT2, estT3);
+
+        printContainer.appendChild(secLabel);
+        printContainer.appendChild(copySec);
+      }
+
+      if (!isNaN(estL) && !isNaN(estH) && estL > 0 && estH > 0) {
+        const elevLabel = document.createElement('div');
+        elevLabel.className = 'print-diag-title';
+        elevLabel.innerText = "BEAM ELEVATION — WHEEL TO WHEEL";
+
+        const copyElev = document.createElement('canvas');
+        copyElev.width = 420;
+        copyElev.height = 300;
+        _drawElevation(copyElev, estL, estH);
+
+        printContainer.appendChild(elevLabel);
+        printContainer.appendChild(copyElev);
+      }
+
+      // Bind temporary container element context into the estimates block
+      const targetCard = document.querySelector('.check-estimates-card');
+      targetCard.appendChild(printContainer);
+
+      // 5. Inject high fidelity print rules explicitly targeting only the selected section
+      const printStyle = document.createElement('style');
+      printStyle.id = 'print-override-style';
+      printStyle.innerHTML = `
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          html, body {
+            background: #ffffff !important;
+            color: #000000 !important;
+          }
+          .check-estimates-card, .check-estimates-card * {
+            visibility: visible !important;
+          }
+          .check-estimates-card {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+          }
+          .card-title {
+            font-size: 1.5rem !important;
+            color: #000000 !important;
+            border-bottom: 2px solid #222 !important;
+            padding-bottom: 6px !important;
+            margin-bottom: 20px !important;
+          }
+          #btn-est-calc, #btn-est-print, .est-formula-note {
+            display: none !important;
+          }
+          .est-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 12px !important;
+            border: 1px solid #bbb !important;
+            padding: 12px !important;
+            background: #fafafa !important;
+            page-break-inside: avoid !important;
+          }
+          .est-section-label {
+            grid-column: 1 / -1 !important;
+            color: #111 !important;
+            border-bottom: 1px solid #444 !important;
+            margin-top: 8px !important;
+          }
+          .check-estimates-card .input-wrap input {
+            background: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #666 !important;
+            font-weight: bold !important;
+          }
+          .check-estimates-card .input-wrap .unit, .check-estimates-card .input-group small {
+            color: #333 !important;
+          }
+          .est-results-strip {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 10px !important;
+            margin: 20px 0 !important;
+            page-break-inside: avoid !important;
+          }
+          .est-kpi {
+            background: #f4f4f4 !important;
+            border: 1px solid #999 !important;
+            box-shadow: none !important;
+          }
+          .est-kpi .est-kpi-val {
+            color: #000000 !important;
+            text-shadow: none !important;
+            font-weight: bold !important;
+          }
+          .est-kpi .est-kpi-lbl {
+            color: #333 !important;
+          }
+          .est-verdict, #est-defl-verdict {
+            display: flex !important;
+            background: #f5f5f5 !important;
+            border: 2px solid #333 !important;
+            color: #000000 !important;
+            box-shadow: none !important;
+            page-break-inside: avoid !important;
+          }
+          .est-verdict.pass, .est-defl-verdict.pass {
+            background: #e8f8f0 !important;
+            border-color: #2e7d32 !important;
+            color: #1b5e20 !important;
+          }
+          .est-verdict.fail, .est-defl-verdict.fail {
+            background: #fde8e8 !important;
+            border-color: #c62828 !important;
+            color: #b71c1c !important;
+          }
+          #print-diagrams-wrap {
+            display: block !important;
+            margin-top: 24px !important;
+          }
+          .print-diag-title {
+            font-family: 'Barlow Condensed', sans-serif !important;
+            font-size: 0.95rem !important;
+            font-weight: 700 !important;
+            margin: 16px 0 4px 0 !important;
+            border-left: 3px solid #000 !important;
+            padding-left: 6px !important;
+            color: #000 !important;
+            page-break-after: avoid !important;
+          }
+          #print-diagrams-wrap canvas {
+            display: block !important;
+            width: 100% !important;
+            max-width: 480px !important;
+            height: auto !important;
+            background: #ffffff !important;
+            border: 1px solid #999 !important;
+            margin-bottom: 12px !important;
+            filter: invert(1) hue-rotate(180deg) !important;
+            page-break-inside: avoid !important;
+          }
+        }
+      `;
+      document.head.appendChild(printStyle);
+
+      // 6. Invoke operational layout system printing
+      window.print();
+
+      // 7. Housekeeping cleanup wrapper to safely clear overhead structures
+      setTimeout(() => {
+        if (printStyle.parentNode) printStyle.parentNode.removeChild(printStyle);
+        if (printContainer.parentNode) printContainer.parentNode.removeChild(printContainer);
+      }, 500);
     }
     </script>
 
@@ -1339,8 +1653,15 @@
     </div></main>
 
   <footer>
-    <p>IS 2062 Grade E250 BR · σ<sub>y</sub> = 250 MPa · FOS = 1.25 · E = 210 000 MPa · G = 9810 N/t &nbsp;|&nbsp; M = Px(L−x)/L</p>
-  </footer>
+  <p>
+    IS 2062 Grade E250 BR · σ<sub>y</sub> = 250 MPa · FOS = 1.25 · E = 210 000 MPa · G = 9810 N/t &nbsp;|&nbsp; M = PL / 4
+  </p>
+
+  <p class="credits-text">
+    By <a href="https://www.linkedin.com/in/kaulik-das-63273328b/" class="footer-link">Kaulik Das</a> & 
+    <a href="https://www.linkedin.com/in/mansi-mehra-65325738a/" class="footer-link">Mansi Mehra</a>
+  </p>
+</footer>
 
   <script>
   // ═══════════════════════════════════════════════════════════════════

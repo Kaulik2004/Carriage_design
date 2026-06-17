@@ -7,6 +7,9 @@
   "scripts": {
     "start": "electron .",
     "dev": "vite",
+    "build": "vite build",
+    "predist": "rimraf dist out && npm run build",
+    "dist": "cross-env NODE_ENV=production electron-packager . CarriageDesign --platform=win32 --arch=x64 --out=out --overwrite",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -23,8 +26,10 @@
     "tinyglobby": "^0.2.17"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "electron": "^42.4.0",
     "electron-packager": "^17.1.2",
+    "rimraf": "^5.0.5",
     "vite": "^8.0.16"
   },
   "repository": {
